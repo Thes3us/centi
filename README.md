@@ -1,9 +1,10 @@
-# Text Editor
+# (Work in progress)
+## Text Editor
 a text editor thing to do some systems programmings stuff
 
-# Requirement
+## Requirement
 - gcc
-# Setup
+## Setup
 - run `make` to build the project
 - run `./centi` on linux
 
