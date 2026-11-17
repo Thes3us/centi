@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 /*** defines ***/
+#define CENTI_VERSION "0.0.1"
 #define CTRL_KEY(k) ((k) & 0x1f) // bitmask to clear 5th and 6th bit to 0, imitating a CTRL key
 
 /*** data ***/
@@ -130,8 +131,22 @@ void abFree(struct abuf *ab){
 void editorDrawRows(struct abuf *ab){
     int y;
     for (y = 0; y < E.screenrows; y++){
-        abAppend(ab, "~", 1);
-
+        if (y == E.screenrows / 3){
+            char welcome[80];
+            int welcomelen = snprintf(welcome,sizeof(welcome),"Centi editor -- version %s", CENTI_VERSION);
+            if(welcomelen > E.screencols) welcomelen = E.screencols;
+            int padding = (E.screencols - welcomelen) / 2;
+            if (padding) {
+                abAppend(ab, "~", 1);
+                padding--;
+            }
+            while (padding--) abAppend(ab, " ", 1);
+            abAppend(ab, welcome, welcomelen);
+        }
+        else {
+            abAppend(ab, "~", 1);
+        }
+        abAppend(ab, "\x1b[K", 3); //K: erase in line, erases part of the current line, here we erase to right of cursor
         if(y < E.screenrows - 1){
             abAppend(ab, "\r\n", 2);
         }
@@ -145,7 +160,7 @@ void editorRefreshScreen(){
     // H command is cursor position, default argument 1;1 which puts cursor at 1,1
     struct abuf ab = ABUF_INIT;
     abAppend(&ab, "\x1b[?25l", 6);
-    abAppend(&ab, "\x1b[2J", 4);
+    //abAppend(&ab, "\x1b[2J", 4); // only need to clear updated lines
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
