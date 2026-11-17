@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -104,6 +105,52 @@ int getWindowSize(int *rows, int *cols){
         return 0;
     }
 }
+/*** append buffer ***/
+//we need a dynamic string type to write everything at once instead of line by line
+struct abuf {
+    char *b;
+    int len;
+};
+//init
+#define ABUF_INIT {NULL,0}
+//takes our custom datatype, reallocs a bigger spaces an then copies new string at the end of old string
+void abAppend(struct abuf *ab, const char *s, int len){
+    char *new = realloc(ab->b, ab->len + len);
+    if(new == NULL) return;
+    memcpy(&new[ab->len], s, len);
+    ab->b = new;
+    ab->len += len;
+}
+
+void abFree(struct abuf *ab){
+    free(ab->b);
+}
+/*** output ***/
+
+void editorDrawRows(struct abuf *ab){
+    int y;
+    for (y = 0; y < E.screenrows; y++){
+        abAppend(ab, "~", 1);
+
+        if(y < E.screenrows - 1){
+            abAppend(ab, "\r\n", 2);
+        }
+    }
+}
+void editorRefreshScreen(){
+    // write 4 bytes, \x1b is an escape sequence, 27 in decimal, and then [2J
+    // escape seq always starts with 27[. we are using VT100 escape sequences
+    // J command is Erase in Display which clears the screen. it takes argument 2, which means the entire screen.
+    // H command is cursor position, default argument 1;1 which puts cursor at 1,1
+    struct abuf ab = ABUF_INIT;
+    abAppend(&ab, "\x1b[2J", 4);
+    abAppend(&ab, "\x1b[H", 3);
+
+    editorDrawRows(&ab);
+    abAppend(&ab, "\x1b[H", 3);
+    write(STDOUT_FILENO,ab.b , ab.len);
+    abFree(&ab);
+}
 
 /*** input ***/
 
@@ -120,30 +167,6 @@ void editorProcessKeypress(){
     }
 }
 
-/*** output ***/
-
-void editorDrawRows(){
-    int y; 
-    for (y = 0; y < E.screenrows; y++){
-        write(STDOUT_FILENO, "~", 1);
-
-        if(y < E.screenrows - 1){
-            write(STDOUT_FILENO, "\r\n", 2);
-        }
-    }
-}
-void editorRefreshScreen(){
-    // write 4 bytes, \x1b is an escape sequence, 27 in decimal, and then [2J
-    // escape seq always starts with 27[. we are using VT100 escape sequences
-    // J command is Erase in Display which clears the screen. it takes argument 2, which means the entire screen.
-    // H command is cursor position, default argument 1;1 which puts cursor at 1,1
-    write(STDOUT_FILENO, "\x1b[2J", 4);
-    write(STDOUT_FILENO, "\x1b[H", 3);
-    
-    editorDrawRows();
-    write(STDOUT_FILENO, "\x1b[H", 3);
-
-}
 
 /*** init ***/
 
