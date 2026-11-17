@@ -140,14 +140,17 @@ void editorDrawRows(struct abuf *ab){
 void editorRefreshScreen(){
     // write 4 bytes, \x1b is an escape sequence, 27 in decimal, and then [2J
     // escape seq always starts with 27[. we are using VT100 escape sequences
+    // h: set, l: reset. used to toggle various modes. ?25 means cursor hiding
     // J command is Erase in Display which clears the screen. it takes argument 2, which means the entire screen.
     // H command is cursor position, default argument 1;1 which puts cursor at 1,1
     struct abuf ab = ABUF_INIT;
+    abAppend(&ab, "\x1b[?25l", 6);
     abAppend(&ab, "\x1b[2J", 4);
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
     abAppend(&ab, "\x1b[H", 3);
+    abAppend(&ab, "\x1b[?25h", 6);
     write(STDOUT_FILENO,ab.b , ab.len);
     abFree(&ab);
 }
