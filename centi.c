@@ -29,7 +29,7 @@ enum editorKey{
 
 // storing original terminal flags to reset it later
 struct editorConfig{
-    int cx, cy;
+    int cx, cy; // mouse position
     int screenrows;
     int screencols;
     struct termios orig_termios;
@@ -42,7 +42,7 @@ struct editorConfig E;
 // it also prints the string given to it before it dies to give you context
 void die(const char *s){
     write(STDOUT_FILENO, "\x1b[2J", 4);
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    write(STDOUT_FILENO, "\x1b[H", 3); //reset everything before crashing
     perror(s);
     exit(1);
 }
@@ -87,7 +87,7 @@ int editorReadKey(){
         if(nread == -1 && errno != EAGAIN) die("read");
     }
     if (c == '\x1b'){ //escape sequence
-        char seq[3];
+        char seq[3]; //allocate 3 bytes
 
         if(read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
         if(read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
@@ -135,7 +135,6 @@ int getCursorPosition(int *rows, int *cols){
     unsigned int i = 0;
 
     if(write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1; // n is device status report, 6 means cursor pos
-    
     while(i < sizeof(buf) -1){
         if(read(STDIN_FILENO, &buf[i], 1) != 1) break;
         if(buf[i] == 'R') break;
@@ -148,7 +147,7 @@ int getCursorPosition(int *rows, int *cols){
 
     return 0;
 }
-int getWindowSize(int *rows, int *cols){
+int getWindowSize(int *rows, int *cols){ //change pointer value to have more flexible return values
     struct winsize ws;
     //from output, we get terminal inp/out control get window size. change the parameter when success or ret -1
     if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0){
@@ -171,11 +170,11 @@ struct abuf {
 #define ABUF_INIT {NULL,0}
 //takes our custom datatype, reallocs a bigger spaces an then copies new string at the end of old string
 void abAppend(struct abuf *ab, const char *s, int len){
-    char *new = realloc(ab->b, ab->len + len);
+    char *new = realloc(ab->b, ab->len + len); //allocates more space
     if(new == NULL) return;
-    memcpy(&new[ab->len], s, len);
+    memcpy(&new[ab->len], s, len); //copies string to the end
     ab->b = new;
-    ab->len += len;
+    ab->len += len; //updates data. this string doesnt have null terminator so a length is needed
 }
 
 void abFree(struct abuf *ab){
@@ -185,15 +184,15 @@ void abFree(struct abuf *ab){
 
 void editorDrawRows(struct abuf *ab){
     int y;
-    for (y = 0; y < E.screenrows; y++){
+    for (y = 0; y < E.screenrows; y++){ //goes upto 1/3rd of screen
         if (y == E.screenrows / 3){
             char welcome[80];
             int welcomelen = snprintf(welcome,sizeof(welcome),"Centi editor -- version %s", CENTI_VERSION);
             if(welcomelen > E.screencols) welcomelen = E.screencols;
-            int padding = (E.screencols - welcomelen) / 2;
+            int padding = (E.screencols - welcomelen) / 2; //puts it in middle
             if (padding) {
                 abAppend(ab, "~", 1);
-                padding--;
+                padding--; //offsets padding by 1 to add a ~
             }
             while (padding--) abAppend(ab, " ", 1);
             abAppend(ab, welcome, welcomelen);
@@ -214,17 +213,17 @@ void editorRefreshScreen(){
     // J command is Erase in Display which clears the screen. it takes argument 2, which means the entire screen.
     // H command is cursor position, default argument 1;1 which puts cursor at 1,1
     struct abuf ab = ABUF_INIT;
-    abAppend(&ab, "\x1b[?25l", 6);
+    abAppend(&ab, "\x1b[?25l", 6); //hide cursor
     //abAppend(&ab, "\x1b[2J", 4); // only need to clear updated lines
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
 
     char buf[32];
-    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy+1, E.cx+1);
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy+1, E.cx+1); //puts cursor over x,y
     abAppend(&ab, buf, strlen(buf));
 
-    abAppend(&ab, "\x1b[?25h", 6);
+    abAppend(&ab, "\x1b[?25h", 6); //show cursor
     write(STDOUT_FILENO,ab.b , ab.len);
     abFree(&ab);
 }
