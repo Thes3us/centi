@@ -1,11 +1,11 @@
 # (Work in progress)
-## Text Editor
-a text editor thing to do some systems programmings stuff
-
+## Centi - Text editor
+A text editor thing to learn systems programming
+use arrow keys, home, end, page up/down to navigate
+press ctrl + q to exit
 ## Requirement
 - gcc
 # Setup
 - run `make` to build the project
 - run `./centi` on linux
-
-press ctrl + q to exit
+- on windows, use any c compiler and compile `centi.c`
