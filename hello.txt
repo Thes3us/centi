@@ -1,0 +1,6 @@
+hello, this is a sample program
+to test if this text editor really works
+if this works then i will be very happy
+here are a bunch of whiespaces            
+did it work?
+signing off

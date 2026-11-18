@@ -7,5 +7,5 @@ press ctrl + q to exit
 - gcc
 # Setup
 - run `make` to build the project
-- run `./centi` on linux
+- run `./centi` or `./centi <filename>` on linux
 - on windows, use any c compiler and compile `centi.c`
